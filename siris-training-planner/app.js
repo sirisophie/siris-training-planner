@@ -210,6 +210,7 @@ function workoutCard(item) {
         <button class="tiny" type="button" data-action="done" data-id="${item.id}">${item.done ? "Undo" : "Done"}</button>
         <button class="tiny" type="button" data-action="skip" data-id="${item.id}">${item.skipped ? "Unskip" : "Skipped"}</button>
         <button class="tiny" type="button" data-action="notes" data-id="${item.id}">Notes</button>
+        <button class="tiny" type="button" data-action="move" data-id="${item.id}">Move</button>
       </div>
     </article>
   `;
@@ -252,12 +253,17 @@ function handleWorkoutAction(event) {
     return;
   }
 
+  if (action === "move") {
+    openDialog(item, dayIndex, true);
+    return;
+  }
+
   render();
 }
 
-function openDialog(item = null, dayIndex = 0) {
+function openDialog(item = null, dayIndex = 0, moving = false) {
   editingId = item ? item.id : null;
-  $("dialogTitle").textContent = item ? "Add notes" : "Log workout";
+  $("dialogTitle").textContent = item ? (moving ? "Move workout" : "Add notes") : "Log workout";
   $("dayField").innerHTML = fullDays.map((day, index) => `<option value="${index}">${day}</option>`).join("");
 
   if (item) {
