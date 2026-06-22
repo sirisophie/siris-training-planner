@@ -42,6 +42,7 @@ const weekTargets = [
 const storageKey = "siris-training-planner-v3";
 let state = loadState();
 let editingId = null;
+let dialogMode = "log";
 
 function $(id) {
   return document.getElementById(id);
@@ -362,6 +363,7 @@ function handleWorkoutAction(event) {
 
 function openDialog(item = null, dayIndex = 0, moving = false) {
   editingId = item ? item.id : null;
+  dialogMode = moving ? "move" : item ? "edit" : "log";
   $("dialogTitle").textContent = item ? (moving ? "Move workout" : "Add notes") : "Log workout";
   $("dayField").innerHTML = fullDays.map((day, index) => `<option value="${index}">${day}</option>`).join("");
 
@@ -388,6 +390,22 @@ function saveWorkout(event) {
   const data = Object.fromEntries(new FormData($("workoutForm")).entries());
   const dayIndex = Number(data.day);
   const week = currentWeek();
+
+  if (editingId && dialogMode === "move") {
+    const found = findWorkout(editingId);
+    if (!found.item) return;
+    const displaced = week.workouts[dayIndex] || null;
+    week.workouts[dayIndex] = found.item;
+    if (found.dayIndex !== dayIndex) {
+      week.workouts[found.dayIndex] = displaced;
+    }
+    $("workoutDialog").close();
+    recordHistory(found.dayIndex === dayIndex ? "move-cancelled" : "moved", found.item);
+    toast(found.dayIndex === dayIndex ? "Workout kept in place." : "Workouts swapped.");
+    render();
+    return;
+  }
+
   const next = workout(
     data.type,
     data.title,
