@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#17201c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Training Planner">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Siri's Training Planner</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">12-week build</p>
+        <h1>Siri's Training Planner</h1>
+      </div>
+      <button class="icon-btn" id="exportBtn" type="button" title="Export data">↓</button>
+    </header>
+
+    <section class="goals" id="goalCards" aria-label="Goal status"></section>
+
+    <section class="panel">
+      <div class="week-head">
+        <button class="icon-btn" id="prevWeek" type="button" title="Previous week">‹</button>
+        <div>
+          <h2 id="weekTitle">This week</h2>
+          <p class="subtle" id="weekSubtitle"></p>
+        </div>
+        <button class="icon-btn" id="nextWeek" type="button" title="Next week">›</button>
+      </div>
+
+      <div class="stats" id="stats"></div>
+      <div class="days" id="days"></div>
+    </section>
+
+    <section class="panel tools">
+      <button class="secondary-btn" id="resetBtn" type="button">Reset sample data</button>
+      <label class="secondary-btn file-btn">
+        Import data
+        <input id="importInput" type="file" accept="application/json">
+      </label>
+    </section>
+  </main>
+
+  <dialog id="workoutDialog">
+    <form id="workoutForm">
+      <div class="modal-body">
+        <div>
+          <h2 id="dialogTitle">Log workout</h2>
+          <p class="subtle">Add what actually happened. These notes stay with the week.</p>
+        </div>
+
+        <label>Day
+          <select name="day" id="dayField"></select>
+        </label>
+
+        <label>Goal
+          <select name="type" id="typeField">
+            <option>JMT</option>
+            <option>Sky</option>
+            <option>Strength</option>
+            <option>Arms</option>
+            <option>Climb</option>
+            <option>Recovery</option>
+          </select>
+        </label>
+
+        <label>Workout
+          <input name="title" id="titleField" required>
+        </label>
+
+        <div class="field-row">
+          <label>Duration
+            <input name="duration" id="durationField" placeholder="60 min">
+          </label>
+          <label>Miles
+            <input name="miles" id="milesField" type="number" min="0" step="0.1">
+          </label>
+        </div>
+
+        <div class="field-row">
+          <label>Vert
+            <input name="vert" id="vertField" type="number" min="0" step="100">
+          </label>
+          <label>Pack
+            <input name="pack" id="packField" placeholder="25 lb">
+          </label>
+        </div>
+
+        <label>Notes
+          <textarea name="notes" id="notesField"></textarea>
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button class="secondary-btn" id="cancelBtn" type="button">Cancel</button>
+        <button class="primary-btn" type="submit">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,482 @@
+:root {
+  --ink: #17201c;
+  --muted: #66746d;
+  --line: #d9e0db;
+  --page: #f5f2eb;
+  --panel: #fffdfa;
+  --green: #257654;
+  --yellow: #f4c430;
+  --red: #af3f3b;
+  --sky: #167b89;
+  --jmt: #257654;
+  --strength: #7561a8;
+  --arms: #b84f65;
+  --climb: #4169a8;
+  --recovery: #9b7024;
+  --shadow: 0 10px 24px rgba(24, 32, 28, .08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.45;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+.app {
+  width: min(900px, 100%);
+  margin: 0 auto;
+  padding: max(18px, env(safe-area-inset-top)) 14px max(28px, env(safe-area-inset-bottom));
+  display: grid;
+  gap: 14px;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+  padding: 4px 2px;
+}
+
+.eyebrow {
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+h1 {
+  font-size: clamp(28px, 8vw, 44px);
+  line-height: 1.03;
+}
+
+h2 {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.subtle {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.goals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.goal-card,
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.goal-card {
+  min-height: 96px;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.goal-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.goal-card h2 {
+  font-size: 15px;
+}
+
+.deadline {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.status {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, .8);
+  box-shadow: 0 0 0 1px rgba(23, 32, 28, .12);
+  flex: 0 0 auto;
+}
+
+.green { background: var(--green); }
+.yellow { background: var(--yellow); }
+.red { background: var(--red); }
+
+.week-head {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 42px;
+  gap: 10px;
+  align-items: center;
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.week-head h2,
+.week-head p {
+  text-align: center;
+}
+
+.icon-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: #18231f;
+  color: white;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.stat {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.stat strong {
+  display: block;
+  font-size: 18px;
+  line-height: 1.05;
+}
+
+.stat span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.days {
+  display: grid;
+}
+
+.day {
+  border-bottom: 1px solid var(--line);
+}
+
+.day:last-child {
+  border-bottom: 0;
+}
+
+.day-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px 6px;
+}
+
+.day-name {
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.day-meta {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.day-add {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #edf3ef;
+  color: var(--ink);
+  border: 1px solid #dce6e0;
+  font-size: 21px;
+  line-height: 1;
+}
+
+.workouts {
+  display: grid;
+  gap: 8px;
+  padding: 0 14px 12px;
+}
+
+.workout {
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--jmt);
+  border-radius: 8px;
+  background: white;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.workout.done {
+  background: #f4faf6;
+  opacity: .78;
+}
+
+.workout.skipped {
+  background: #fff7f3;
+  opacity: .78;
+}
+
+.workout[data-type="Sky"] { border-left-color: var(--sky); }
+.workout[data-type="JMT"] { border-left-color: var(--jmt); }
+.workout[data-type="Strength"] { border-left-color: var(--strength); }
+.workout[data-type="Arms"] { border-left-color: var(--arms); }
+.workout[data-type="Climb"] { border-left-color: var(--climb); }
+.workout[data-type="Recovery"] { border-left-color: var(--recovery); }
+
+.workout-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.workout-title {
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.tag {
+  color: white;
+  background: var(--jmt);
+  border-radius: 999px;
+  padding: 3px 7px;
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.tag.Sky { background: var(--sky); }
+.tag.Strength { background: var(--strength); }
+.tag.Arms { background: var(--arms); }
+.tag.Climb { background: var(--climb); }
+.tag.Recovery { background: var(--recovery); }
+
+.workout-meta,
+.workout-note {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.tiny {
+  min-height: 34px;
+  border-radius: 7px;
+  background: #edf3ef;
+  color: var(--ink);
+  border: 1px solid #dce6e0;
+  font-size: 12px;
+}
+
+.tools {
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.primary-btn,
+.secondary-btn {
+  min-height: 42px;
+  border-radius: 8px;
+  padding: 9px 12px;
+}
+
+.primary-btn {
+  background: #18231f;
+  color: white;
+}
+
+.secondary-btn {
+  background: white;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  text-align: center;
+}
+
+.file-btn input {
+  display: none;
+}
+
+dialog {
+  width: min(540px, calc(100vw - 24px));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0;
+  box-shadow: var(--shadow);
+}
+
+dialog::backdrop {
+  background: rgba(18, 25, 22, .42);
+}
+
+.modal-body {
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+  padding: 9px 10px;
+}
+
+textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+  background: #fafbf9;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  background: #18231f;
+  color: white;
+  border-radius: 999px;
+  padding: 10px 15px;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+  max-width: min(640px, calc(100vw - 28px));
+  text-align: center;
+  font-size: 13px;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+@media (min-width: 1180px) {
+  .app {
+    width: min(1480px, 100%);
+  }
+
+  .goals {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .days {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  .day {
+    border-bottom: 0;
+    border-right: 1px solid var(--line);
+    min-height: 440px;
+  }
+
+  .day:last-child {
+    border-right: 0;
+  }
+
+  .actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 760px) and (max-width: 1179px) {
+  .goals {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .days {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1px;
+    background: var(--line);
+  }
+
+  .day {
+    background: var(--panel);
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
+
+  .tools,
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+}

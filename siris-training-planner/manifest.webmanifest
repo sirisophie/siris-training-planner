@@ -1,0 +1,17 @@
+{
+  "name": "Siri's Training Planner",
+  "short_name": "Training",
+  "description": "A simple planner for JMT, Sky Marathon, wedding arms, and climbing training.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f5f2eb",
+  "theme_color": "#17201c",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
