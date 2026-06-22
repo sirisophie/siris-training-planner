@@ -24,7 +24,22 @@ const seedWeeks = [
   { phase: "Goal Week", dates: "Sept 7-13", focus: "Execute", scale: .42 }
 ];
 
-const storageKey = "siris-training-planner-v1";
+const weekTargets = [
+  { qMi: 5.5, qVert: 1000, eMi: 3.8, eVert: 400, longMi: 12, longVert: 2200, hikeMi: 5, hikeVert: 900, pack: 18 },
+  { qMi: 6, qVert: 1100, eMi: 4.2, eVert: 500, longMi: 13.5, longVert: 2600, hikeMi: 6, hikeVert: 1100, pack: 20 },
+  { qMi: 6.5, qVert: 1200, eMi: 4.5, eVert: 600, longMi: 15, longVert: 3000, hikeMi: 7, hikeVert: 1300, pack: 22 },
+  { qMi: 5, qVert: 800, eMi: 3.5, eVert: 300, longMi: 10, longVert: 1800, hikeMi: 5, hikeVert: 700, pack: 20 },
+  { qMi: 7, qVert: 1400, eMi: 5, eVert: 600, longMi: 16, longVert: 3600, hikeMi: 8, hikeVert: 1500, pack: 24 },
+  { qMi: 7.5, qVert: 1600, eMi: 5, eVert: 700, longMi: 17, longVert: 4200, hikeMi: 9, hikeVert: 1700, pack: 26 },
+  { qMi: 8, qVert: 1800, eMi: 5.5, eVert: 800, longMi: 18.5, longVert: 4800, hikeMi: 10, hikeVert: 1900, pack: 28 },
+  { qMi: 6, qVert: 1000, eMi: 4.5, eVert: 500, longMi: 13, longVert: 2600, hikeMi: 7, hikeVert: 1200, pack: 24 },
+  { qMi: 8.5, qVert: 1900, eMi: 6, eVert: 800, longMi: 20, longVert: 5200, hikeMi: 11, hikeVert: 2100, pack: 30 },
+  { qMi: 8, qVert: 1800, eMi: 5.5, eVert: 700, longMi: 21, longVert: 5400, hikeMi: 12, hikeVert: 2200, pack: 30 },
+  { qMi: 5, qVert: 800, eMi: 4, eVert: 300, longMi: 8, longVert: 1000, hikeMi: 4, hikeVert: 500, pack: 20 },
+  { qMi: 3, qVert: 400, eMi: 3, eVert: 200, longMi: 0, longVert: 0, hikeMi: 3, hikeVert: 400, pack: 0 }
+];
+
+const storageKey = "siris-training-planner-v2";
 let state = loadState();
 let editingId = null;
 
@@ -47,36 +62,41 @@ function createState() {
 }
 
 function makeWeek(index) {
-  const scale = seedWeeks[index].scale;
   const taper = index >= 10;
   const deload = seedWeeks[index].phase === "Deload";
-  const longMiles = round1((12 + index * 1.25) * scale);
-  const easyRunMiles = round1(3.8 + index * .28);
-  const secondMiles = round1((5 + index * .75) * scale);
-  const vert = Math.round((2200 + index * 420) / 100) * 100;
-  const pack = Math.min(30, Math.round(18 + index * 1.6));
+  const target = weekTargets[index];
 
   if (taper) {
     return [
       workout("Recovery", "Mobility / easy walk", "25-35 min"),
-      workout("Sky", "Short uphill tune-up", "45-60 min", 4, 900),
+      workout("Sky", "Short uphill tune-up", "45-60 min", target.qMi, target.qVert),
       workout("Strength", "Full-body strength", "30-40 min"),
-      workout("Sky", "Easy run + arms finisher", "35-50 min", 3.5, 300),
+      workout("Sky", "Easy run + arms finisher", "35-50 min", target.eMi, target.eVert),
       workout("Climb", "Easy climb / mobility", "45-60 min"),
-      workout("Sky", index === 11 ? "JMT readiness walk" : "Relaxed run / hike", "2-3 hr", 6, 1200),
+      workout("Sky", index === 11 ? "Goal-week shakeout" : "Relaxed run / hike", index === 11 ? "30-45 min" : "90-120 min", target.longMi, target.longVert),
       workout("Recovery", "Recovery", "20-30 min")
     ];
   }
 
   return [
     workout("Recovery", "Recovery / mobility", "25-40 min"),
-    workout("Sky", index > 7 ? "Sustained uphill run" : "Hill intervals", "75-100 min", round1(5.5 * scale), Math.round((1000 + index * 160) / 100) * 100),
+    workout("Sky", index > 7 ? "Sustained uphill run" : "Hill intervals", "75-100 min", target.qMi, target.qVert),
     workout("Strength", deload ? "Light full-body strength" : "Full-body strength", "45-60 min"),
-    workout("Sky", "Easy run + arms finisher", "45-70 min", easyRunMiles, Math.round((400 + index * 60) / 100) * 100),
+    workout("Sky", "Easy run + arms finisher", "45-70 min", target.eMi, target.eVert),
     workout("Climb", deload ? "Easy MoonBoard" : "MoonBoard + arms finisher", "45-70 min"),
-    workout("Sky", index > 7 ? "Long mountain run / hike" : "Mountain run / hike", `${Math.round(4.5 + index * .45)}-${Math.round(5.5 + index * .55)} hr`, longMiles, vert),
-    workout("JMT", "Weighted pack hike", `${Math.round(2.2 + index * .25)}-${Math.round(3.2 + index * .35)} hr`, secondMiles, Math.round((900 + index * 190) / 100) * 100, `${pack} lb`)
+    workout("Sky", index > 7 ? "Long mountain run / hike" : "Mountain run / hike", longDuration(index), target.longMi, target.longVert),
+    workout("JMT", "Weighted pack hike", hikeDuration(index), target.hikeMi, target.hikeVert, `${target.pack} lb`)
   ];
+}
+
+function longDuration(index) {
+  const durations = ["4-5 hr", "4.5-5.5 hr", "5-6 hr", "3-4 hr", "5-6.5 hr", "5.5-7 hr", "6-7.5 hr", "4-5 hr", "6.5-8 hr", "7-8.5 hr"];
+  return durations[index] || "2-3 hr";
+}
+
+function hikeDuration(index) {
+  const durations = ["2-3 hr", "2.5-3.5 hr", "3-4 hr", "2-3 hr", "3.5-4.5 hr", "4-5 hr", "4.5-5.5 hr", "3-4 hr", "5-6 hr", "5.5-6.5 hr"];
+  return durations[index] || "2-3 hr";
 }
 
 function workout(type, title, duration = "", miles = 0, vert = 0, pack = "", notes = "") {
