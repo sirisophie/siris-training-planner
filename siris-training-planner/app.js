@@ -3,10 +3,10 @@ const fullDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Satur
 const today = new Date("2026-06-22T12:00:00");
 
 const goals = [
-  { name: "JMT", deadline: "2026-09-13", status: "green" },
-  { name: "Sky Marathon", deadline: "2026-09-09", status: "yellow" },
-  { name: "Wedding Arms", deadline: "2026-09-11", status: "green" },
-  { name: "Climbing", deadline: "", status: "yellow" }
+  { id: "jmt", name: "JMT", deadline: "2026-09-13", baseline: "green" },
+  { id: "sky", name: "Sky Marathon", deadline: "2026-09-09", baseline: "yellow" },
+  { id: "arms", name: "Wedding Arms", deadline: "2026-09-11", baseline: "green" },
+  { id: "climb", name: "Climbing", deadline: "", baseline: "yellow" }
 ];
 
 const seedWeeks = [
@@ -39,7 +39,7 @@ const weekTargets = [
   { qMi: 3, qVert: 400, eMi: 3, eVert: 200, longMi: 0, longVert: 0, hikeMi: 3, hikeVert: 400, pack: 0 }
 ];
 
-const storageKey = "siris-training-planner-v2";
+const storageKey = "siris-training-planner-v3";
 let state = loadState();
 let editingId = null;
 
@@ -54,6 +54,7 @@ function round1(value) {
 function createState() {
   return {
     weekIndex: 0,
+    history: [],
     weeks: seedWeeks.map((week, index) => ({
       ...week,
       workouts: makeWeek(index)
@@ -117,7 +118,9 @@ function workout(type, title, duration = "", miles = 0, vert = 0, pack = "", not
 function loadState() {
   try {
     const stored = JSON.parse(localStorage.getItem(storageKey));
-    if (stored && stored.weeks && stored.weeks.length === 12) return stored;
+    if (stored && stored.weeks && stored.weeks.length === 12) {
+      return { history: [], ...stored };
+    }
   } catch (error) {}
   return createState();
 }
@@ -139,17 +142,91 @@ function render() {
 }
 
 function renderGoals() {
-  $("goalCards").innerHTML = goals.map(goal => `
+  $("goalCards").innerHTML = goals.map(goal => {
+    const status = goalStatus(goal);
+    return `
     <article class="goal-card">
       <div class="goal-top">
         <div>
           <h2>${goal.name}</h2>
           <p class="deadline">${weeksUntil(goal.deadline)}</p>
         </div>
-        <div class="status ${goal.status}" title="${goal.status}"></div>
+        <div class="status ${status.color}" title="${escapeHtml(status.reason)}" aria-label="${escapeHtml(status.reason)}"></div>
       </div>
     </article>
-  `).join("");
+  `;
+  }).join("");
+}
+
+function goalStatus(goal) {
+  const workouts = currentWeek().workouts.filter(Boolean);
+  const touched = workouts.filter(item => item.done || item.skipped || item.notes);
+  if (!touched.length) {
+    return { color: goal.baseline, reason: initialStatusReason(goal.id) };
+  }
+
+  const riskNotes = workouts.filter(item => hasRiskNote(item.notes));
+  const relevant = workouts.filter(item => workoutAppliesToGoal(item, goal.id));
+  const done = relevant.filter(item => item.done);
+  const skipped = relevant.filter(item => item.skipped);
+  const completion = relevant.length ? done.length / relevant.length : 0;
+
+  if (riskNotes.some(item => workoutAppliesToGoal(item, goal.id) || goal.id === "jmt" || goal.id === "sky")) {
+    return { color: "red", reason: "Pain or injury notes are present. Reduce load and prioritize recovery." };
+  }
+
+  if (goal.id === "jmt") {
+    const weightedDone = done.some(item => item.type === "JMT" || item.title.toLowerCase().includes("weighted"));
+    const mountainDone = done.some(item => item.title.toLowerCase().includes("mountain"));
+    if (weightedDone && mountainDone) return { color: "green", reason: "Weighted hike and mountain run/hike are complete this week." };
+    if (skipped.some(item => item.type === "JMT") || completion < .5) return { color: "yellow", reason: "JMT key work is incomplete or skipped this week." };
+    return { color: "green", reason: "JMT work is on track for the current week." };
+  }
+
+  if (goal.id === "sky") {
+    const runCount = done.filter(item => item.type === "Sky").length;
+    const longDone = done.some(item => item.title.toLowerCase().includes("mountain") || item.title.toLowerCase().includes("long"));
+    if (runCount >= 3 && longDone) return { color: "green", reason: "Three run touches and the long run/hike are complete." };
+    if (skipped.some(item => item.type === "Sky") || runCount < 2) return { color: "yellow", reason: "Sky work needs attention: keep two to three run touches if recovery allows." };
+    return { color: "green", reason: "Sky work is progressing this week." };
+  }
+
+  if (goal.id === "arms") {
+    const armSignals = done.filter(item => item.type === "Strength" || item.type === "Arms" || item.title.toLowerCase().includes("arms")).length;
+    if (armSignals >= 2) return { color: "green", reason: "Two strength/arms signals are complete this week." };
+    if (skipped.some(item => item.type === "Strength" || item.type === "Arms")) return { color: "yellow", reason: "Strength or arms work was skipped this week." };
+    return { color: "yellow", reason: "One more strength or arms signal would keep this goal on track." };
+  }
+
+  if (goal.id === "climb") {
+    if (done.some(item => item.type === "Climb")) return { color: "green", reason: "Climbing consistency box checked this week." };
+    if (skipped.some(item => item.type === "Climb")) return { color: "yellow", reason: "Climbing was skipped, but it is lower priority during the JMT/Sky build." };
+    return { color: "yellow", reason: "Climbing is pending and intentionally secondary to JMT/Sky." };
+  }
+
+  return { color: goal.baseline, reason: "Status uses current-week completion, skipped workouts, and notes." };
+}
+
+function workoutAppliesToGoal(item, goalId) {
+  const title = item.title.toLowerCase();
+  if (goalId === "jmt") return item.type === "JMT" || title.includes("weighted") || title.includes("pack") || title.includes("mountain");
+  if (goalId === "sky") return item.type === "Sky";
+  if (goalId === "arms") return item.type === "Strength" || item.type === "Arms" || title.includes("arms");
+  if (goalId === "climb") return item.type === "Climb";
+  return false;
+}
+
+function hasRiskNote(notes = "") {
+  return /\b(pain|injury|injured|sharp|limp|swollen|knee|achilles|shin|stress|blister|sick|ill)\b/i.test(notes);
+}
+
+function initialStatusReason(goalId) {
+  return {
+    jmt: "Initial status: strong base, needs consistent pack durability.",
+    sky: "Initial status: meaningful performance jump, so watch running consistency.",
+    arms: "Initial status: already strong, needs consistency.",
+    climb: "Initial status: possible, but secondary to the September goals."
+  }[goalId] || "Initial status.";
 }
 
 function weeksUntil(deadline) {
@@ -259,12 +336,14 @@ function handleWorkoutAction(event) {
   if (action === "done") {
     item.done = !item.done;
     if (item.done) item.skipped = false;
+    recordHistory(item.done ? "done" : "undone", item);
     toast(item.done ? "Marked done." : "Marked incomplete.");
   }
 
   if (action === "skip") {
     item.skipped = !item.skipped;
     if (item.skipped) item.done = false;
+    recordHistory(item.skipped ? "skipped" : "unskipped", item);
     toast(item.skipped ? "Marked skipped." : "Removed skipped mark.");
   }
 
@@ -331,6 +410,7 @@ function saveWorkout(event) {
         week.workouts[found.dayIndex] = displaced;
       }
       $("workoutDialog").close();
+      recordHistory(found.dayIndex === dayIndex ? "updated" : "moved", next);
       toast(found.dayIndex === dayIndex ? "Workout updated." : "Workouts swapped.");
       render();
       return;
@@ -350,8 +430,22 @@ function saveWorkout(event) {
 
   week.workouts[dayIndex] = next;
   $("workoutDialog").close();
+  recordHistory("logged", next);
   toast("Workout logged.");
   render();
+}
+
+function recordHistory(action, item) {
+  state.history = state.history || [];
+  state.history.unshift({
+    action,
+    weekIndex: state.weekIndex,
+    workoutId: item.id,
+    type: item.type,
+    title: item.title,
+    at: new Date().toISOString()
+  });
+  state.history = state.history.slice(0, 200);
 }
 
 function exportData() {

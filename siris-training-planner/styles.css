@@ -138,6 +138,27 @@ h2 {
 .yellow { background: var(--yellow); }
 .red { background: var(--red); }
 
+.status-key {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 0 2px;
+}
+
+.status-key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.status-key .status {
+  width: 13px;
+  height: 13px;
+  border-width: 0;
+}
+
 .week-head {
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr) 42px;
