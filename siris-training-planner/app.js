@@ -288,6 +288,7 @@ function saveWorkout(event) {
   event.preventDefault();
   const data = Object.fromEntries(new FormData($("workoutForm")).entries());
   const dayIndex = Number(data.day);
+  const week = currentWeek();
   const next = workout(
     data.type,
     data.title,
@@ -304,13 +305,32 @@ function saveWorkout(event) {
     if (found.item) {
       next.done = found.item.done;
       next.skipped = found.item.skipped;
-      currentWeek().workouts[found.dayIndex] = null;
+      const displaced = week.workouts[dayIndex] || null;
+      week.workouts[dayIndex] = next;
+      if (found.dayIndex !== dayIndex) {
+        week.workouts[found.dayIndex] = displaced;
+      }
+      $("workoutDialog").close();
+      toast(found.dayIndex === dayIndex ? "Workout updated." : "Workouts swapped.");
+      render();
+      return;
     }
   }
 
-  currentWeek().workouts[dayIndex] = next;
+  if (week.workouts[dayIndex]) {
+    const emptyDay = week.workouts.findIndex(item => !item);
+    if (emptyDay >= 0) {
+      week.workouts[emptyDay] = week.workouts[dayIndex];
+      toast(`Existing workout moved to ${fullDays[emptyDay]}.`);
+    } else {
+      toast("That day already has a workout.");
+      return;
+    }
+  }
+
+  week.workouts[dayIndex] = next;
   $("workoutDialog").close();
-  toast(editingId ? "Workout updated." : "Workout logged.");
+  toast("Workout logged.");
   render();
 }
 
