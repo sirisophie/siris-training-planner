@@ -1,6 +1,7 @@
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const fullDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-const today = new Date("2026-06-22T12:00:00");
+const planStart = new Date("2026-06-22T12:00:00");
+const today = new Date();
 
 const goals = [
   { id: "jmt", name: "JMT", deadline: "2026-09-13", baseline: "green" },
@@ -43,6 +44,7 @@ const storageKey = "siris-training-planner-v3";
 let state = loadState();
 let editingId = null;
 let dialogMode = "log";
+let visibleMonth = new Date(today.getFullYear(), today.getMonth(), 1, 12);
 
 function $(id) {
   return document.getElementById(id);
@@ -54,7 +56,8 @@ function round1(value) {
 
 function createState() {
   return {
-    weekIndex: 0,
+    weekIndex: currentCalendarWeekIndex(),
+    lastOpened: todayKey(),
     history: [],
     weeks: seedWeeks.map((week, index) => ({
       ...week,
@@ -70,24 +73,24 @@ function makeWeek(index) {
 
   if (taper) {
     return [
-      workout("Recovery", "Mobility / easy walk", "25-35 min"),
-      workout("Sky", "Short uphill tune-up", "45-60 min", target.qMi, target.qVert),
-      workout("Strength", "Full-body strength", "30-40 min"),
-      workout("Sky", "Easy run + arms finisher", "35-50 min", target.eMi, target.eVert),
-      workout("Climb", "Easy climb / mobility", "45-60 min"),
-      workout("Sky", index === 11 ? "Goal-week shakeout" : "Relaxed run / hike", index === 11 ? "30-45 min" : "90-120 min", target.longMi, target.longVert),
-      workout("Recovery", "Recovery", "20-30 min")
+      [workout("Recovery", "Mobility / easy walk", "25-35 min")],
+      [workout("Sky", "Short uphill tune-up", "45-60 min", target.qMi, target.qVert)],
+      [workout("Strength", "Full-body strength", "30-40 min")],
+      [workout("Sky", "Easy run + arms finisher", "35-50 min", target.eMi, target.eVert)],
+      [workout("Climb", "Easy climb / mobility", "45-60 min")],
+      [workout("Sky", index === 11 ? "Goal-week shakeout" : "Relaxed run / hike", index === 11 ? "30-45 min" : "90-120 min", target.longMi, target.longVert)],
+      [workout("Recovery", "Recovery", "20-30 min")]
     ];
   }
 
   return [
-    workout("Recovery", "Recovery / mobility", "25-40 min"),
-    workout("Sky", index > 7 ? "Sustained uphill run" : "Hill intervals", "75-100 min", target.qMi, target.qVert),
-    workout("Strength", deload ? "Light full-body strength" : "Full-body strength", "45-60 min"),
-    workout("Sky", "Easy run + arms finisher", "45-70 min", target.eMi, target.eVert),
-    workout("Climb", deload ? "Easy MoonBoard" : "MoonBoard + arms finisher", "45-70 min"),
-    workout("Sky", index > 7 ? "Long mountain run / hike" : "Mountain run / hike", longDuration(index), target.longMi, target.longVert),
-    workout("JMT", "Weighted pack hike", hikeDuration(index), target.hikeMi, target.hikeVert, `${target.pack} lb`)
+    [workout("Recovery", "Recovery / mobility", "25-40 min")],
+    [workout("Sky", index > 7 ? "Sustained uphill run" : "Hill intervals", "75-100 min", target.qMi, target.qVert)],
+    [workout("Strength", deload ? "Light full-body strength" : "Full-body strength", "45-60 min")],
+    [workout("Sky", "Easy run + arms finisher", "45-70 min", target.eMi, target.eVert)],
+    [workout("Climb", deload ? "Easy MoonBoard" : "MoonBoard + arms finisher", "45-70 min")],
+    [workout("Sky", index > 7 ? "Long mountain run / hike" : "Mountain run / hike", longDuration(index), target.longMi, target.longVert)],
+    [workout("JMT", "Weighted pack hike", hikeDuration(index), target.hikeMi, target.hikeVert, `${target.pack} lb`)]
   ];
 }
 
@@ -120,10 +123,26 @@ function loadState() {
   try {
     const stored = JSON.parse(localStorage.getItem(storageKey));
     if (stored && stored.weeks && stored.weeks.length === 12) {
-      return { history: [], ...stored };
+      const next = { history: [], ...stored };
+      normalizeState(next);
+      const openKey = todayKey();
+      if (next.lastOpened !== openKey) {
+        next.weekIndex = currentCalendarWeekIndex();
+        next.lastOpened = openKey;
+      }
+      return next;
     }
   } catch (error) {}
   return createState();
+}
+
+function normalizeState(next) {
+  next.weeks.forEach(week => {
+    week.workouts = week.workouts.map(day => {
+      if (Array.isArray(day)) return day.filter(Boolean);
+      return day ? [day] : [];
+    });
+  });
 }
 
 function saveState() {
@@ -134,11 +153,31 @@ function currentWeek() {
   return state.weeks[state.weekIndex];
 }
 
+function allWorkouts(week = currentWeek()) {
+  return week.workouts.flat().filter(Boolean);
+}
+
+function currentCalendarWeekIndex() {
+  const todayNoon = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12);
+  const elapsedDays = Math.floor((todayNoon - planStart) / 86400000);
+  return Math.min(seedWeeks.length - 1, Math.max(0, Math.floor(elapsedDays / 7)));
+}
+
+function todayDayIndex() {
+  const index = today.getDay() - 1;
+  return index < 0 ? 6 : index;
+}
+
+function todayKey() {
+  return today.toISOString().slice(0, 10);
+}
+
 function render() {
   renderGoals();
   renderWeek();
   renderStats();
   renderDays();
+  renderMonth();
   saveState();
 }
 
@@ -160,7 +199,7 @@ function renderGoals() {
 }
 
 function goalStatus(goal) {
-  const workouts = currentWeek().workouts.filter(Boolean);
+  const workouts = allWorkouts();
   const touched = workouts.filter(item => item.done || item.skipped || item.notes);
   if (!touched.length) {
     return { color: goal.baseline, reason: initialStatusReason(goal.id) };
@@ -245,7 +284,7 @@ function renderWeek() {
 }
 
 function renderStats() {
-  const workouts = currentWeek().workouts.filter(Boolean);
+  const workouts = allWorkouts();
   const completed = workouts.filter(item => item.done);
   const plannedMiles = round1(workouts.reduce((sum, item) => sum + Number(item.miles || 0), 0));
   const plannedVert = workouts.reduce((sum, item) => sum + Number(item.vert || 0), 0);
@@ -262,19 +301,21 @@ function renderStats() {
 
 function renderDays() {
   const week = currentWeek();
+  const calendarWeek = currentCalendarWeekIndex();
+  const dayToday = todayDayIndex();
   $("days").innerHTML = days.map((day, index) => {
-    const workoutItem = week.workouts[index];
+    const dayItems = week.workouts[index] || [];
+    const isToday = state.weekIndex === calendarWeek && index === dayToday;
     return `
-      <section class="day">
+      <section class="day ${isToday ? "today" : ""}">
         <div class="day-head">
           <div>
             <div class="day-name">${fullDays[index]}</div>
-            <div class="day-meta">${index < 5 ? "7-9am window" : "Weekend block"}</div>
           </div>
           <button class="day-add" type="button" data-add="${index}" title="Log workout">+</button>
         </div>
         <div class="workouts">
-          ${workoutItem ? workoutCard(workoutItem) : ""}
+          ${dayItems.map(item => workoutCard(item)).join("")}
         </div>
       </section>
     `;
@@ -286,6 +327,63 @@ function renderDays() {
   document.querySelectorAll("[data-add]").forEach(button => {
     button.addEventListener("click", () => openDialog(null, Number(button.dataset.add)));
   });
+}
+
+function renderMonth() {
+  $("monthTitle").textContent = visibleMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const first = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1, 12);
+  const startOffset = (first.getDay() + 6) % 7;
+  const gridStart = addDays(first, -startOffset);
+  const cells = [];
+
+  for (let i = 0; i < 42; i += 1) {
+    const date = addDays(gridStart, i);
+    const key = dateKey(date);
+    const marks = marksByDate().get(key) || { done: [], skipped: false };
+    const outside = date.getMonth() !== visibleMonth.getMonth();
+    const isToday = key === todayKey();
+    cells.push(`
+      <div class="month-day ${outside ? "outside" : ""} ${isToday ? "today" : ""}">
+        <div class="date-num">${date.getDate()}</div>
+        <div class="marks">
+          ${[...new Set(marks.done)].map(type => `<i class="dot ${type}" title="${type}"></i>`).join("")}
+          ${marks.skipped ? `<span class="skip-mark" title="Skipped">X</span>` : ""}
+        </div>
+      </div>
+    `);
+  }
+
+  $("monthGrid").innerHTML = cells.join("");
+}
+
+function marksByDate() {
+  const map = new Map();
+  state.weeks.forEach((week, weekIndex) => {
+    week.workouts.forEach((items, dayIndex) => {
+      const key = dateKey(addDays(planStart, weekIndex * 7 + dayIndex));
+      const entry = map.get(key) || { done: [], skipped: false };
+      items.forEach(item => {
+        if (item.done) entry.done.push(item.type);
+        if (item.skipped) entry.skipped = true;
+      });
+      map.set(key, entry);
+    });
+  });
+  return map;
+}
+
+function addDays(date, daysToAdd) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + daysToAdd);
+  return next;
+}
+
+function dateKey(date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0")
+  ].join("-");
 }
 
 function workoutCard(item) {
@@ -325,8 +423,12 @@ function escapeHtml(value) {
 }
 
 function findWorkout(id) {
-  const dayIndex = currentWeek().workouts.findIndex(item => item && item.id === id);
-  return { dayIndex, item: currentWeek().workouts[dayIndex] };
+  const week = currentWeek();
+  for (let dayIndex = 0; dayIndex < week.workouts.length; dayIndex += 1) {
+    const workoutIndex = week.workouts[dayIndex].findIndex(item => item.id === id);
+    if (workoutIndex >= 0) return { dayIndex, workoutIndex, item: week.workouts[dayIndex][workoutIndex] };
+  }
+  return { dayIndex: -1, workoutIndex: -1, item: null };
 }
 
 function handleWorkoutAction(event) {
@@ -394,14 +496,14 @@ function saveWorkout(event) {
   if (editingId && dialogMode === "move") {
     const found = findWorkout(editingId);
     if (!found.item) return;
-    const displaced = week.workouts[dayIndex] || null;
-    week.workouts[dayIndex] = found.item;
+    const moved = found.item;
     if (found.dayIndex !== dayIndex) {
-      week.workouts[found.dayIndex] = displaced;
+      week.workouts[found.dayIndex].splice(found.workoutIndex, 1);
+      week.workouts[dayIndex].push(moved);
     }
     $("workoutDialog").close();
     recordHistory(found.dayIndex === dayIndex ? "move-cancelled" : "moved", found.item);
-    toast(found.dayIndex === dayIndex ? "Workout kept in place." : "Workouts swapped.");
+    toast(found.dayIndex === dayIndex ? "Workout kept in place." : `Moved to ${fullDays[dayIndex]}.`);
     render();
     return;
   }
@@ -410,8 +512,8 @@ function saveWorkout(event) {
     data.type,
     data.title,
     data.duration,
-    Number(data.miles || 0),
-    Number(data.vert || 0),
+    parseFlexibleNumber(data.miles),
+    parseFlexibleNumber(data.vert),
     data.pack,
     data.notes
   );
@@ -422,31 +524,20 @@ function saveWorkout(event) {
     if (found.item) {
       next.done = found.item.done;
       next.skipped = found.item.skipped;
-      const displaced = week.workouts[dayIndex] || null;
-      week.workouts[dayIndex] = next;
+      week.workouts[found.dayIndex].splice(found.workoutIndex, 1);
+      week.workouts[dayIndex].push(next);
       if (found.dayIndex !== dayIndex) {
-        week.workouts[found.dayIndex] = displaced;
+        toast(`Moved to ${fullDays[dayIndex]}.`);
       }
       $("workoutDialog").close();
       recordHistory(found.dayIndex === dayIndex ? "updated" : "moved", next);
-      toast(found.dayIndex === dayIndex ? "Workout updated." : "Workouts swapped.");
+      if (found.dayIndex === dayIndex) toast("Workout updated.");
       render();
       return;
     }
   }
 
-  if (week.workouts[dayIndex]) {
-    const emptyDay = week.workouts.findIndex(item => !item);
-    if (emptyDay >= 0) {
-      week.workouts[emptyDay] = week.workouts[dayIndex];
-      toast(`Existing workout moved to ${fullDays[emptyDay]}.`);
-    } else {
-      toast("That day already has a workout.");
-      return;
-    }
-  }
-
-  week.workouts[dayIndex] = next;
+  week.workouts[dayIndex].push(next);
   $("workoutDialog").close();
   recordHistory("logged", next);
   toast("Workout logged.");
@@ -464,6 +555,11 @@ function recordHistory(action, item) {
     at: new Date().toISOString()
   });
   state.history = state.history.slice(0, 200);
+}
+
+function parseFlexibleNumber(value) {
+  const cleaned = String(value || "").replace(/,/g, "").match(/-?\d+(\.\d+)?/);
+  return cleaned ? Number(cleaned[0]) : 0;
 }
 
 function exportData() {
@@ -485,6 +581,7 @@ function importData(file) {
       const imported = JSON.parse(reader.result);
       if (!imported.weeks || imported.weeks.length !== 12) throw new Error("Invalid planner data.");
       state = imported;
+      normalizeState(state);
       toast("Data imported.");
       render();
     } catch (error) {
@@ -508,6 +605,19 @@ function setupPwa() {
   }
 }
 
+async function refreshApp() {
+  toast("Refreshing app...");
+  if ("serviceWorker" in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map(registration => registration.update()));
+  }
+  if ("caches" in window) {
+    const keys = await caches.keys();
+    await Promise.all(keys.map(key => caches.delete(key)));
+  }
+  window.location.reload();
+}
+
 $("prevWeek").addEventListener("click", () => {
   state.weekIndex = Math.max(0, state.weekIndex - 1);
   render();
@@ -518,8 +628,19 @@ $("nextWeek").addEventListener("click", () => {
   render();
 });
 
+$("prevMonth").addEventListener("click", () => {
+  visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() - 1, 1, 12);
+  renderMonth();
+});
+
+$("nextMonth").addEventListener("click", () => {
+  visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 1, 12);
+  renderMonth();
+});
+
 $("workoutForm").addEventListener("submit", saveWorkout);
 $("cancelBtn").addEventListener("click", () => $("workoutDialog").close());
+$("refreshBtn").addEventListener("click", refreshApp);
 $("exportBtn").addEventListener("click", exportData);
 $("importInput").addEventListener("change", event => importData(event.target.files[0]));
 $("resetBtn").addEventListener("click", () => {

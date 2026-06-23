@@ -18,7 +18,10 @@
         <p class="eyebrow">12-week build</p>
         <h1>Siri's Training Planner</h1>
       </div>
-      <button class="icon-btn" id="exportBtn" type="button" title="Export data">↓</button>
+      <div class="header-actions">
+        <button class="icon-btn" id="refreshBtn" type="button" title="Refresh app">↻</button>
+        <button class="icon-btn" id="exportBtn" type="button" title="Export data">↓</button>
+      </div>
     </header>
 
     <section class="goals" id="goalCards" aria-label="Goal status"></section>
@@ -41,6 +44,29 @@
 
       <div class="stats" id="stats"></div>
       <div class="days" id="days"></div>
+    </section>
+
+    <section class="panel month-panel">
+      <div class="month-head">
+        <button class="icon-btn" id="prevMonth" type="button" title="Previous month">‹</button>
+        <div>
+          <h2 id="monthTitle">Month</h2>
+          <p class="subtle">Completed and skipped workouts</p>
+        </div>
+        <button class="icon-btn" id="nextMonth" type="button" title="Next month">›</button>
+      </div>
+      <div class="calendar-weekdays" aria-hidden="true">
+        <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+      </div>
+      <div class="month-grid" id="monthGrid"></div>
+      <div class="calendar-key">
+        <span><i class="dot JMT"></i> JMT</span>
+        <span><i class="dot Sky"></i> Sky</span>
+        <span><i class="dot Strength"></i> Strength</span>
+        <span><i class="dot Arms"></i> Arms</span>
+        <span><i class="dot Climb"></i> Climb</span>
+        <span><b>X</b> Skipped</span>
+      </div>
     </section>
 
     <section class="panel tools">
@@ -84,13 +110,13 @@
             <input name="duration" id="durationField" placeholder="60 min">
           </label>
           <label>Miles
-            <input name="miles" id="milesField" type="number" min="0" step="0.1">
+            <input name="miles" id="milesField" inputmode="decimal" placeholder="4.5">
           </label>
         </div>
 
         <div class="field-row">
           <label>Vert
-            <input name="vert" id="vertField" type="number" min="0" step="100">
+            <input name="vert" id="vertField" inputmode="numeric" placeholder="1200">
           </label>
           <label>Pack
             <input name="pack" id="packField" placeholder="25 lb">
