@@ -1,4 +1,4 @@
-const CACHE_NAME = "siris-training-planner-v6";
+const CACHE_NAME = "siris-training-planner-v7";
 const ASSETS = [
   "./",
   "./index.html",

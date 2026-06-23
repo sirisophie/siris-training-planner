@@ -112,6 +112,8 @@ function workout(type, title, duration = "", miles = 0, vert = 0, pack = "", not
     duration,
     miles,
     vert,
+    actualMiles: null,
+    actualVert: null,
     pack,
     notes,
     done: false,
@@ -139,8 +141,12 @@ function loadState() {
 function normalizeState(next) {
   next.weeks.forEach(week => {
     week.workouts = week.workouts.map(day => {
-      if (Array.isArray(day)) return day.filter(Boolean);
-      return day ? [day] : [];
+      const items = Array.isArray(day) ? day.filter(Boolean) : day ? [day] : [];
+      return items.map(item => ({
+        actualMiles: null,
+        actualVert: null,
+        ...item
+      }));
     });
   });
 }
@@ -288,8 +294,8 @@ function renderStats() {
   const completed = workouts.filter(item => item.done);
   const plannedMiles = round1(workouts.reduce((sum, item) => sum + Number(item.miles || 0), 0));
   const plannedVert = workouts.reduce((sum, item) => sum + Number(item.vert || 0), 0);
-  const completedMiles = round1(completed.reduce((sum, item) => sum + Number(item.miles || 0), 0));
-  const completedVert = completed.reduce((sum, item) => sum + Number(item.vert || 0), 0);
+  const completedMiles = round1(completed.reduce((sum, item) => sum + actualMiles(item), 0));
+  const completedVert = completed.reduce((sum, item) => sum + actualVert(item), 0);
   const skipped = workouts.filter(item => item.skipped).length;
 
   $("stats").innerHTML = [
@@ -412,6 +418,14 @@ function workoutCard(item) {
   `;
 }
 
+function actualMiles(item) {
+  return Number(item.actualMiles ?? item.miles ?? 0);
+}
+
+function actualVert(item) {
+  return Number(item.actualVert ?? item.vert ?? 0);
+}
+
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, char => ({
     "&": "&amp;",
@@ -474,8 +488,8 @@ function openDialog(item = null, dayIndex = 0, moving = false) {
     $("typeField").value = item.type;
     $("titleField").value = item.title;
     $("durationField").value = item.duration;
-    $("milesField").value = item.miles || "";
-    $("vertField").value = item.vert || "";
+    $("milesField").value = item.actualMiles ?? item.miles ?? "";
+    $("vertField").value = item.actualVert ?? item.vert ?? "";
     $("packField").value = item.pack || "";
     $("notesField").value = item.notes || "";
   } else {
@@ -508,15 +522,20 @@ function saveWorkout(event) {
     return;
   }
 
+  const existing = editingId ? findWorkout(editingId).item : null;
+  const enteredMiles = parseFlexibleNumber(data.miles);
+  const enteredVert = parseFlexibleNumber(data.vert);
   const next = workout(
     data.type,
     data.title,
     data.duration,
-    parseFlexibleNumber(data.miles),
-    parseFlexibleNumber(data.vert),
+    existing ? Number(existing.miles || 0) : enteredMiles,
+    existing ? Number(existing.vert || 0) : enteredVert,
     data.pack,
     data.notes
   );
+  next.actualMiles = enteredMiles;
+  next.actualVert = enteredVert;
   next.done = true;
 
   if (editingId) {
