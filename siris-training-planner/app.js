@@ -5,9 +5,9 @@ const today = new Date();
 
 const goals = [
   { id: "jmt", name: "JMT", deadline: "2026-09-13", baseline: "green" },
-  { id: "sky", name: "Sky Marathon", deadline: "2026-09-09", baseline: "yellow" },
+  { id: "sky", name: "Sky Marathon", deadline: "2026-09-09", baseline: "green" },
   { id: "arms", name: "Wedding Arms", deadline: "2026-09-11", baseline: "green" },
-  { id: "climb", name: "Climbing", deadline: "", baseline: "yellow" }
+  { id: "climb", name: "Climbing", deadline: "", baseline: "green" }
 ];
 
 const seedWeeks = [
@@ -208,9 +208,30 @@ function goalStatus(goal) {
   const workouts = allWorkouts();
   const touched = workouts.filter(item => item.done || item.skipped || item.notes);
   if (!touched.length) {
-    return { color: goal.baseline, reason: initialStatusReason(goal.id) };
+    return priorGoalStatus(goal);
   }
 
+  return calculateGoalStatus(goal, workouts, "this week");
+}
+
+function priorGoalStatus(goal) {
+  if (state.weekIndex === 0) {
+    return { color: goal.baseline, reason: "Initial week starts green until workouts are logged." };
+  }
+
+  for (let index = state.weekIndex - 1; index >= 0; index -= 1) {
+    const workouts = allWorkouts(state.weeks[index]);
+    const touched = workouts.filter(item => item.done || item.skipped || item.notes);
+    if (touched.length) {
+      const status = calculateGoalStatus(goal, workouts, `Week ${index + 1}`);
+      return { ...status, reason: `Inherited from Week ${index + 1}: ${status.reason}` };
+    }
+  }
+
+  return { color: goal.baseline, reason: initialStatusReason(goal.id) };
+}
+
+function calculateGoalStatus(goal, workouts, periodLabel) {
   const riskNotes = workouts.filter(item => hasRiskNote(item.notes));
   const relevant = workouts.filter(item => workoutAppliesToGoal(item, goal.id));
   const done = relevant.filter(item => item.done);
@@ -224,9 +245,9 @@ function goalStatus(goal) {
   if (goal.id === "jmt") {
     const weightedDone = done.some(item => item.type === "JMT" || item.title.toLowerCase().includes("weighted"));
     const mountainDone = done.some(item => item.title.toLowerCase().includes("mountain"));
-    if (weightedDone && mountainDone) return { color: "green", reason: "Weighted hike and mountain run/hike are complete this week." };
-    if (skipped.some(item => item.type === "JMT") || completion < .5) return { color: "yellow", reason: "JMT key work is incomplete or skipped this week." };
-    return { color: "green", reason: "JMT work is on track for the current week." };
+    if (weightedDone && mountainDone) return { color: "green", reason: `Weighted hike and mountain run/hike are complete in ${periodLabel}.` };
+    if (skipped.some(item => item.type === "JMT") || completion < .5) return { color: "yellow", reason: `JMT key work is incomplete or skipped in ${periodLabel}.` };
+    return { color: "green", reason: `JMT work is on track in ${periodLabel}.` };
   }
 
   if (goal.id === "sky") {
